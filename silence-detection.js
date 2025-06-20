@@ -5,7 +5,7 @@ const path = require("path");
 // CONFIG
 const CHUNK_SIZE = 3200; // 100ms for 16kHz mono 16-bit
 const SILENCE_THRESHOLD = 400;
-const SILENT_CHUNKS_LIMIT = 15; // ~2s silence
+const SILENT_CHUNKS_LIMIT = 15; // ~1.5s silence
 const FILE_PATH = "test_audio.wav";
 const OUTPUT_FILE = "transcript.txt";
 const STREAM_INTERVAL_MS = 100;
@@ -25,36 +25,36 @@ function createNewSocket() {
   ws = new WebSocket(wsURL);
 
   ws.on("open", () => {
-    console.log("✅ Socket opened");
+    console.log("Socket opened");
     isStreaming = true;
     startStreaming();
   });
 
   ws.on("close", () => {
-    console.log("❌ Socket closed");
+    console.log("Socket closed");
     isStreaming = false;
   });
 
   ws.on("error", (err) => {
-    console.error("❌ WebSocket error:", err);
+    console.error("WebSocket error:", err);
     isStreaming = false;
   });
 
   ws.on("message", (data) => {
     try {
       const message = JSON.parse(data);
-      console.log("📥 Received message:", message);
+      console.log("Received message:", message);
       const results = message?.result;
 
       if (results && Array.isArray(results)) {
         const finalSegments = results.filter((r) => r.is_final && r.text.trim());
         for (const segment of finalSegments) {
           fs.appendFileSync(OUTPUT_FILE, segment.text.trim() + "\n");
-          console.log("📝 Final:", segment.text);
+          console.log("Final:", segment.text);
         }
       }
     } catch (error) {
-      console.error("❌ Error parsing message:", error);
+      console.error("Error parsing message:", error);
     }
   });
 }
@@ -74,7 +74,7 @@ function startStreaming() {
 
     // End of audio file
     if (bufferOffset >= audioBuffer.length) {
-      console.log("✅ Finished streaming file");
+      console.log("Finished streaming file");
       clearInterval(interval);
       return;
     }
@@ -88,7 +88,7 @@ function startStreaming() {
         console.log(`Silent chunk ${silentChunks}/${SILENT_CHUNKS_LIMIT}`);
 
         if (silentChunks >= SILENT_CHUNKS_LIMIT) {
-          console.log("🔁 Silence threshold met — sending reset");
+          console.log("Silence threshold met — sending reset");
           ws.send("reset");
           silentChunks = 0;
         }
@@ -97,7 +97,7 @@ function startStreaming() {
         ws.send(chunk);
       }
     } catch (err) {
-      console.error("❌ Error during chunk send:", err);
+      console.error("Error during chunk send:", err);
     }
   }, STREAM_INTERVAL_MS);
 }
